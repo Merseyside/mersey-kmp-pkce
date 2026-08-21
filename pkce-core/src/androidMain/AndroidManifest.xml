@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!--
+          exported: адрес возврата доставляет браузер, то есть чужое приложение.
+          singleTask: возврат должен попасть в уже запущенный экземпляр, а не создать новый.
+          Сам фильтр адреса возврата добавляет приложение — он зависит от его настроек.
+        -->
+        <activity
+            android:name="com.merseyside.pkce.PkceAuthActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+    </application>
+</manifest>
