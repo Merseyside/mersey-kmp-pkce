@@ -162,8 +162,19 @@ class PkceAuthService(
             config.extraAuthParams.forEach { (key, value) -> parameters.append(key, value) }
         }.buildString()
 
-    private fun randomState(): String =
-        Base64.UrlSafe.withPadding(Base64.PaddingOption.ABSENT).encode(secureRandomBytes(16))
+    /**
+     * Случайная часть `state` — та, что защищает от подмены ответа. Если приложение
+     * задало [PkceConfig.statePrefix], он идёт впереди: сервис вернёт `state`
+     * нетронутым, и по префиксу страница возврата поймёт, куда отправлять дальше.
+     * Сверяется потом всё равно строка целиком.
+     */
+    private fun randomState(): String {
+        val random = Base64.UrlSafe.withPadding(Base64.PaddingOption.ABSENT)
+            .encode(secureRandomBytes(16))
+
+        val prefix = config.statePrefix ?: return random
+        return prefix + PkceConfig.STATE_SEPARATOR + random
+    }
 
     private fun updateState(tokens: TokenSet?): AuthState {
         val state = tokens?.let { AuthState.Authorized(it) } ?: AuthState.Unauthorized

@@ -14,6 +14,10 @@ package com.merseyside.pkce
  * [redirectUri]. Нужен, когда сервис принимает только https (так требует Spotify),
  * а вернуть управление приложению может лишь собственная схема: тогда по https-адресу
  * лежит страница, которая тут же перенаправляет на `myapp://callback`.
+ * @param statePrefix своя часть параметра `state`, которую сервис вернёт нетронутой.
+ * Нужна, когда адрес возврата один на несколько платформ: по ней страница возврата
+ * понимает, куда отправить человека дальше. К префиксу через [STATE_SEPARATOR]
+ * дописывается случайная часть — та, ради которой `state` и существует.
  * @param scopes запрашиваемые права.
  * @param scopeSeparator разделитель прав в запросе. Пробел — значение по умолчанию
  * из RFC 6749, но некоторые сервисы ждут запятую.
@@ -25,6 +29,7 @@ data class PkceConfig(
     val tokenEndpoint: String,
     val redirectUri: String,
     val callbackUri: String? = null,
+    val statePrefix: String? = null,
     val scopes: List<String> = emptyList(),
     val scopeSeparator: String = " ",
     val extraAuthParams: Map<String, String> = emptyMap()
@@ -32,6 +37,11 @@ data class PkceConfig(
     init {
         require(clientId.isNotBlank()) { "clientId is blank" }
         require(redirectUri.isNotBlank()) { "redirectUri is blank" }
+
+        // Иначе страница возврата не разберёт, где кончается префикс
+        require(statePrefix?.contains(STATE_SEPARATOR) != true) {
+            "statePrefix must not contain '$STATE_SEPARATOR'"
+        }
     }
 
     /** Что ждёт платформа: собственный адрес перехвата, а если его нет — обычный. */
@@ -40,4 +50,15 @@ data class PkceConfig(
 
     internal val scopeValue: String?
         get() = scopes.takeIf { it.isNotEmpty() }?.joinToString(scopeSeparator)
+
+    companion object {
+
+        /**
+         * Разделитель между [statePrefix] и случайной частью `state`.
+         *
+         * Тильда не встречается в случайной части (она в base64url) и не требует
+         * экранирования в адресе, поэтому обе половины разбираются однозначно.
+         */
+        const val STATE_SEPARATOR: String = "~"
+    }
 }
