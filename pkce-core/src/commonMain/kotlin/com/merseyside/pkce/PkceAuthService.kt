@@ -129,7 +129,16 @@ class PkceAuthService(
                 return@runCatchingAuth AuthResult.Success(current)
             }
 
-            val tokens = tokenApi.refresh(refreshToken)
+            val tokens = try {
+                tokenApi.refresh(refreshToken)
+            } catch (error: PkceError.ServerError) {
+                // Сервис отверг сам refresh-токен: он истёк или отозван, и
+                // повторять с ним бесполезно. Забываем токены, как при выходе, —
+                // иначе каждый запрос снова пойдёт обновлять тот же мёртвый токен,
+                // а войти заново человеку так и не предложат
+                if (error.error == INVALID_GRANT) logout()
+                throw error
+            }
             storage.saveTokens(tokens)
             updateState(tokens)
 
@@ -193,3 +202,6 @@ class PkceAuthService(
         AuthResult.Failure(PkceError.Unexpected(error))
     }
 }
+
+/** Ответ сервиса на refresh-токен, который больше не действует (RFC 6749, раздел 5.2). */
+private const val INVALID_GRANT = "invalid_grant"
