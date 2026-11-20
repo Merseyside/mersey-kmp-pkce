@@ -18,3 +18,6 @@ dependencyResolutionManagement {
         }
     }
 }
+
+// Явное имя: с включёнными projects без него кэш сборки зависит от имени папки
+rootProject.name = "buildSrc"
